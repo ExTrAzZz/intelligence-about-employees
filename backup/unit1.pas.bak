@@ -1,0 +1,499 @@
+unit Main;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Grids, Menus, StdCtrls,
+  ComCtrls, ActnList, StdActns, Data, LazUTF8, LCLType;
+
+type
+
+  { TForm1 }
+
+  TForm1 = class(TForm)
+    AClose: TAction;
+    AMinus: TAction;
+    AEditing: TAction;
+    ASearching: TAction;
+    MenuItem10: TMenuItem;
+    ODEmployeeList: TOpenDialog;
+    PChange: TMenuItem;
+    PMinus: TMenuItem;
+    MenuItem13: TMenuItem;
+    PSearching: TMenuItem;
+    POpen: TMenuItem;
+    PSave: TMenuItem;
+    PSaveAs: TMenuItem;
+    PAdd: TMenuItem;
+    AOpeneningFile: TAction;
+    ASaveFiles: TAction;
+    ASaveAs: TAction;
+    APlus: TAction;
+    ActionList: TActionList;
+    ImageList1: TImageList;
+    MainMenu1: TMainMenu;
+    MenFile: TMenuItem;
+    Add: TMenuItem;
+    Edit: TMenuItem;
+    Del: TMenuItem;
+    PopupMenu1: TPopupMenu;
+    SDEmployeeList: TSaveDialog;
+    Search: TMenuItem;
+    line: TMenuItem;
+    MenuItem15: TMenuItem;
+    MenuItem16: TMenuItem;
+    PanelInstr: TMenuItem;
+    Sostoin: TMenuItem;
+    StBar: TStatusBar;
+    TablAnaliz: TMenuItem;
+    MenPodr: TMenuItem;
+    GrafAnaliz: TMenuItem;
+    MenuView: TMenuItem;
+    MenuAnaliz: TMenuItem;
+    MenSpravka: TMenuItem;
+    AddFile: TMenuItem;
+    SaveFile: TMenuItem;
+    SaveAs: TMenuItem;
+    CloseProgram: TMenuItem;
+    StrGrid: TStringGrid;
+    ToolBar1: TToolBar;
+    TOpenFile: TToolButton;
+    TAnaliz: TToolButton;
+    TAnalizGraf: TToolButton;
+    ToolButton12: TToolButton;
+    TCloseFile: TToolButton;
+    TSave: TToolButton;
+    TSaveAss: TToolButton;
+    ToolButton4: TToolButton;
+    TPlus: TToolButton;
+    TEditing: TToolButton;
+    TMinus: TToolButton;
+    TSearching: TToolButton;
+    ToolButton9: TToolButton;
+    procedure ACloseExecute(Sender: TObject);
+    procedure ActionListUpdate(AAction: TBasicAction; var Handled: Boolean);
+    procedure AEditingExecute(Sender: TObject);
+    procedure AEditingUpdate(Sender: TObject);
+    procedure AMinusExecute(Sender: TObject);
+    procedure AOpeneningFileExecute(Sender: TObject);
+    procedure APlusExecute(Sender: TObject);
+    procedure ASaveAsExecute(Sender: TObject);
+    procedure ASaveFilesExecute(Sender: TObject);
+    procedure ASearchingExecute(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure PanelInstrClick(Sender: TObject);
+    procedure SostoinClick(Sender: TObject);
+  private
+    ColSort:array[1..5] of integer;
+    IndexColSort:byte;
+
+    // Добавить/заменить данные сотдурника в StringGrid
+    procedure WriteEmployeeRec(EmployeeRec: TEmployeeRec; rAdd: boolean);
+
+    // Прочитать данные сотрудника из выбранной строки StringGrid
+    function ReadEmployeeRec: TEmployeeRec;
+
+    // Загрузить данные сотрудников из файла
+    function OpenFileEmployeeList(FileName: string):byte;
+
+    // Сохранить данные сотрудников в файл
+    function SaveFileEmployeeList(FileName: string):byte;
+
+    // Обновить данные в строке состояния StBar
+    procedure UpdateStBar;
+
+  public
+
+  end;
+
+var
+  Form1: TForm1;
+
+implementation
+
+const
+  // Номера столбцов Stgrid
+  nColName=1;       // Сотрудник
+  nColDivision=2;   // Подразделение
+  nColPost=3;       // Должность
+  nColHappy=4;      // Дата рождения
+  nColExperience=5; // Стаж
+  nColSalary=6;     // Оклад
+  nColPrize=7;      // Премия
+{$R *.lfm}
+
+{ TForm1 }
+
+procedure TForm1.WriteEmployeeRec(EmployeeRec: TEmployeeRec; rAdd: boolean);
+var
+  Row: integer;
+begin
+  if rAdd then
+     // Добавить новую запись в конец
+     begin
+       Row:=StrGrid.RowCount;
+       StrGrid.RowCount:=StrGrid.RowCount+1;
+     end
+  else
+      // Заменить существую запись
+      Row:= StrGrid.Row;
+
+  StrGrid.Cells[1,Row]:=EmployeeRec.Owner;
+  StrGrid.Cells[2,Row]:=EmployeeRec.Division;
+  StrGrid.Cells[3,Row]:=EmployeeRec.Post;
+  StrGrid.Cells[4,Row]:=DateTimeToStr(EmployeeRec.BirthDay);
+  StrGrid.Cells[5,Row]:=IntToStr(EmployeeRec.Experience);
+  StrGrid.Cells[6,Row]:=FloatToStr(EmployeeRec.Salary);
+  StrGrid.Cells[7,Row]:=FloatToStr(EmployeeRec.Prize);
+end;
+
+// Прочитать данные сотрудника на выбранной строке StingGrid
+function TForm1.ReadEmployeeRec: TEmployeeRec;
+var
+  EmployeeRec: TEmployeeRec;
+begin
+  EmployeeRec.Owner:=StrGrid.Cells[1,StrGrid.Row];
+  EmployeeRec.Division:=StrGrid.Cells[2,StrGrid.Row];
+  EmployeeRec.Post:=StrGrid.Cells[3,StrGrid.Row];
+  EmployeeRec.BirthDay:=StrToDateTime(StrGrid.Cells[4,StrGrid.Row]);
+  EmployeeRec.Experience:=StrToInt(StrGrid.Cells[5,StrGrid.Row]);
+  EmployeeRec.Salary:=StrToFloat(StrGrid.Cells[6,StrGrid.Row]);
+  EmployeeRec.Prize:=StrToFloat(StrGrid.Cells[7,StrGrid.Row]);
+
+  result:= EmployeeRec;
+end;
+
+// Загрузить данные из файла сотрудника
+function TForm1.OpenFileEmployeeList(FileName: string):byte;
+var
+  F: file of TEmployeeRec; // Файловая переменная
+  buf: TEmployeeRec;
+  RecordCount, i:integer;
+begin
+  result:=0 ;
+
+  try
+    // Связываем файловую переменную с файлом
+    AssignFile(F, FileName);
+
+    // Открытие файла для чтения
+    Reset(F);
+
+    // Очистка ячейки StringGrid
+    StrGrid.Clean([gzNormal,gzFixedRows]);
+
+    // Определить колиство строк в StringGrid
+    // в зависимости от количества записей в файле
+    RecordCount:= FileSize(F);
+    StrGrid.RowCount:=RecordCount+1;
+
+    // Чтение записей фала в StringGrid
+    for i:=1 to RecordCount do
+        begin
+            // Чтение данных из файла
+            read(F, buf);
+
+            // Заполнение строки StringGrid
+            StrGrid.Cells[nColName,i]:= buf.Owner;                                   // Сотрудник
+            StrGrid.Cells[nColDivision,i]:= buf.Division;                            // Подразделение
+            StrGrid.Cells[nColPost,i]:= buf.Post;                                    // Должность
+            StrGrid.Cells[nColHappy,i]:= DateTimeToStr(buf.BirthDay);                // Дата рождения
+            StrGrid.Cells[nColExperience,i]:= IntToStr(buf.Experience);              // Стаж
+            StrGrid.Cells[nColSalary,i]:= FloatToStrF(buf.Salary, ffFixed,8,2);       // Оклад
+            StrGrid.Cells[nColPrize,i]:= FloatToStrF(buf.Prize, ffFixed,8,2);         // Премия
+        end;
+
+    // Закрытие фала
+    CloseFile(F);
+  except
+    result:= 1;
+  end;
+end;
+
+// Сохранить данные в существующий файл сотрудника
+function TForm1.SaveFileEmployeeList(FileName:string):byte;
+var
+  F: File of TEmployeeRec; // Файловая переменная
+  buf: TEmployeeRec;
+  i: integer;
+begin
+  result:= 0;
+
+  try
+    // Связываем файловую переменную с файлом
+    AssignFile(F, FileName);
+
+    // Открытие файла для записи
+    Rewrite(F);
+
+    // Запись данных StringGrid в файл
+    for i:= 1 to StrGrid.RowCount-1 do
+        begin
+            // Чтение строки из StringGrid
+            buf.Owner:= StrGrid.Cells[nColName,i];                           // Сотрудник
+            buf.Division:= StrGrid.Cells[nColDivision,i];                    // Подразделение
+            buf.Post:= StrGrid.Cells[nColPost,i];                            // Должность
+            buf.BirthDay:= StrToDateTime(StrGrid.Cells[nColHappy,i]);        // Дата рождения
+            buf.Experience:= StrToInt(StrGrid.Cells[nColExperience,i]);      // Стаж
+            buf.Salary:= StrToFloat(StrGrid.Cells[nColSalary,i]);            // Оклад
+            buf.Prize:= StrToFloat(StrGrid.Cells[nColPrize,i]);              // Премия
+
+            // Запись данных в файл
+            write(F,buf);
+        end;
+
+    // Закрытие файла
+    CloseFile(F);
+  except
+    result:= 1;
+  end;
+end;
+
+// Обновить данные в строке состояний StBar
+procedure TForm1.UpdateStBar;
+var
+  i: integer;
+  sum: real;
+begin
+  // Сведения о количестве записей в StringGrid
+  StBar.Panels[0].Text:='Сотрудников: ' + IntToStr(StrGrid.RowCount-1);
+
+  // Файл по умолчанию
+  if FileName = '' then
+     StBar.Panels[1].Text:='Файл сведения о сотрудниках: не задан'
+  else
+    StBar.Panels[1].Text:='Файл сведения о сотрудниках: '+ ExtractFileDrive(FileName)+
+                                '\...\'+ExtractFileName(FileName);
+
+  // Общая премия
+  sum:=0;
+  for i:= 1 to StrGrid.RowCount-1 do
+      sum:= sum + StrToFloat(StrGrid.Cells[nColPrize,i]);
+  StBar.Panels[2].Text:='Сумма премий: '+FloatToStrF(sum, ffFixed,10,2);
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+var
+  i: integer;
+begin
+  for i:= 1 to 5 do
+      ColSort[i]:=0;
+
+      // 1-ая строка
+     StrGrid.Cells[nColName,1]:='Иванов Ф.И.';
+     StrGrid.Cells[nColDivision,1]:='Архив';
+     StrGrid.Cells[nColPost,1]:='Руководитель';
+     StrGrid.Cells[nColHappy,1]:='29.09.1976';
+     StrGrid.Cells[nColExperience,1]:='8 лет';
+     StrGrid.Cells[nColSalary,1]:='5.203';
+     StrGrid.Cells[nColPrize,1]:='416';
+     // 2-ая строка
+     StrGrid.Cells[nColName,2]:='Кириллова Е.И.';
+     StrGrid.Cells[nColDivision,2]:='Склад';
+     StrGrid.Cells[nColPost,2]:='Заведующий складом';
+     StrGrid.Cells[nColHappy,2]:='20.03.1983';
+     StrGrid.Cells[nColExperience,2]:='10 лет';
+     StrGrid.Cells[nColSalary,2]:='2.374';
+     StrGrid.Cells[nColPrize,2]:='237';
+     // 3-ая строка
+     StrGrid.Cells[nColName,3]:='Потапов В.С.';
+     StrGrid.Cells[nColDivision,3]:='Отдел кадров';
+     StrGrid.Cells[nColPost,3]:='Менеджер';
+     StrGrid.Cells[nColHappy,3]:='09.10.1992';
+     StrGrid.Cells[nColExperience,3]:='3 года';
+     StrGrid.Cells[nColSalary,3]:='1.542';
+     StrGrid.Cells[nColPrize,3]:='46';
+     // 4-ая строка
+     StrGrid.Cells[nColName,4]:='Дудко О.В.';
+     StrGrid.Cells[nColDivision,4]:='Производство';
+     StrGrid.Cells[nColPost,4]:='Слесарь';
+     StrGrid.Cells[nColHappy,4]:='27.07.1965';
+     StrGrid.Cells[nColExperience,4]:='14 лет';
+     StrGrid.Cells[nColSalary,4]:='2.021 руб';
+     StrGrid.Cells[nColPrize,4]:='661';
+     // 5-ая строка
+     StrGrid.Cells[nColName,5]:='Таран О.С.';
+     StrGrid.Cells[nColDivision,5]:='Транспортный отдел';
+     StrGrid.Cells[nColPost,5]:='Курьер';
+     StrGrid.Cells[nColHappy,5]:='30.04.1983';
+     StrGrid.Cells[nColExperience,5]:='2 года';
+     StrGrid.Cells[nColSalary,5]:='3.421';
+     StrGrid.Cells[nColPrize,5]:='68';
+
+     // Демонстрационное заполнение StatusBar
+  // StBar.Panels[0].Text:='Сотрудников: 5';
+  // StBar.Panels[2].Text:='Сумма премий: 1428 руб';
+     // Обнвоить данные в строке состояний StBar
+     UpdateStBar;
+end;
+
+// Обработчик Выбора пунктов подменю Вид
+// Вкл/Откл видимиости панели инструментов
+procedure TForm1.PanelInstrClick(Sender: TObject);
+begin
+  TMenuItem(Sender).Checked:= TMenuItem(Sender).Checked;
+  ToolBar1.Visible:= TMenuItem(Sender).Checked;
+end;
+
+
+// Вкл/Откл видимости строки состояния
+procedure TForm1.SostoinClick(Sender: TObject);
+begin
+     TMenuItem(Sender).Checked:= TMenuItem(Sender).Checked;
+     StBar.Visible:= TMenuItem(Sender).Checked;
+end;
+
+// Обработчика исполнения Action's
+
+// Обаботчкики Acttion's для категории File
+// Обработчки открыть..
+procedure TForm1.AOpeneningFileExecute(Sender: TObject);
+begin
+     if IsEditData then
+        // Была молицикация данных
+        if Application.MessageBox(PChar('Данные сведения о сотрудниках были модифицированы, после открытия файла изменения будут потеряны'+
+           #13+'       Продолжить открытие нового файла?'),'Открытие файла',MB_ICONQUESTION+MB_YESNO) = IDNO then
+              // Прервать открытие файла
+              Exit;
+     if ODEmployeeList.Execute then
+        // Загрузить данные из файла
+        if OpenFileEmployeeList(ODEmployeeList.FileName) = 0 then
+           begin
+                FileName:= ODEmployeeList.FileName; // Имя файла - задать по умолчанию
+                IsEditData:= False;
+                // Обновить данные в строке состояние StBar
+                UpdateStBar;
+             end
+        else
+            Application.MessageBox(PChar('Ошибка при открытии файла'+#13+'с сотрудниками'),
+            'Открытие фала',MB_ICONERROR+MB_OK);
+end;
+
+// Обработчик сохранить
+procedure TForm1.ASaveFilesExecute(Sender: TObject);
+begin
+     if SaveFileEmployeeList(FileName)=0 then
+        begin
+             IsEditData:= False; //  Признак ридактирования данных - спбросить
+             // Обновить данные в строке состояния StBar
+             UpDateStBar;
+
+             Application.MessageBox(PChar('Данные сотрудников'+#13+'сохранены в файл'),
+             'Сохранение файла',MB_ICONINFORMATION+MB_OK);
+        end
+        else
+           Application.MessageBox(PChar('Ошибка при открытии файла'+#13+'с сотрудниками'),
+            'Открытие фала',MB_ICONERROR+MB_OK);
+end;
+
+// Обработчки Сохранить как...
+procedure TForm1.ASaveAsExecute(Sender: TObject);
+begin
+     if SDEmployeeList.Execute then
+        begin
+             // Попытка сохранить данные в существующий файл
+             if FileExists(SDEmployeeList.FileName) then
+                // Выдать сообщение-вопрос пользователю
+                if Application.MessageBox(PChar('Файл с именем ' + ExtractFileName(FileName)+
+                ' уже существует.' + #13 + 'Заменить?'),'Сохранение файла', MB_ICONQUESTION + MB_YESNO) = IDNO then
+                   // Прервать сохранение
+                   Exit;
+             // Сохранить данные в файл
+             if SaveFileEmployeeList(SDEmployeeList.FileName) = 0 then
+                begin
+                     FileName:= SDEmployeeList.FileName; // Имя файла - задать по умолчанию
+                     IsEditData:= False; // Признак редактирования данных - сбросить
+                     // Обновить данные в сроке состояний StBar
+                     UpdateStBar;
+
+                     Application.MessageBox(PChar('Ошибка при сохранении данных'+#13+'с сотрудниками'),
+            'Сохранение файла',MB_ICONERROR+MB_OK);
+                end;
+        end;
+end;
+
+// Обработчик Выйти
+procedure TForm1.ACloseExecute(Sender: TObject);
+begin
+     Close; // Закрытие главного окна и приложения
+end;
+
+// Обработчики Acttion's для категории Пользователи
+// Обработчик Добавить...
+procedure TForm1.APlusExecute(Sender: TObject);
+var
+  EmployeeRec: TEmployeeRec;
+begin
+     // Создать пустую запись
+     EmployeeRec.Owner:='';
+     EmployeeRec.Division:='';
+     EmployeeRec.Post:='';
+     EmployeeRec.BirthDay:=Date();
+     EmployeeRec.Experience:=0;
+     EmployeeRec.Salary:=0;
+     EmployeeRec.Prize:=0;
+     // Вызвать форму редактирования
+     if ShowEmployeeEdit(EmployeeRec, EmployeeRec) = mrOk then
+        // Добавить запись в StringGrid
+        begin
+             WriteEmployeeRec(EmployeeRec, Write);
+             StrGrid.Row:= StrGrid.RowCount-1;
+             IsEditData:= True; // Признак редактирования данных - установить
+
+             // Обновить данные в строке состояний StBar;
+             UpdateStBar;
+        end;
+end;
+
+// Обработчик Редактировать...
+procedure TForm1.AEditingExecute(Sender: TObject);
+var
+  EmployeeRec: TEmployeeRec;
+begin
+     // Прочитать записи из StringGrid
+     EmployeeRec:= ReadEmloyeeRec;
+     // Вызвать форму редактирования
+     if ShowEmployeeEdit(EmployeeRec, EmployeeRec) = mrOk then
+        begin
+             // Записать отредактированную запись в StringGrid
+             WriteEmployeeRec(EmployeeRec, False);
+             IsEditData:= True; // Признак редактирования данных - установить
+
+             // Обновить данные в строке состояния StBar
+             UpdateStBar;
+        end;
+end;
+
+procedure TForm1.AMinusExecute(Sender: TObject);
+begin
+
+end;
+
+
+// Обработчик доступности/недоступности действий
+// модификации, поиска и анализа данных
+procedure TForm1.AEditingUpdate(Sender: TObject);
+begin
+  if StrGrid.RowCount > 1
+     then TAction(Sender).Enabled:=true
+     else TAction(Sender).Enabled:=false;
+end;
+
+procedure TForm1.ActionListUpdate(AAction: TBasicAction; var Handled: Boolean);
+begin
+
+end;
+
+
+procedure TForm1.ASearchingExecute(Sender: TObject);
+begin
+
+end;
+
+
+
+
+end.
+

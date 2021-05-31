@@ -1,0 +1,153 @@
+object Form2: TForm2
+  Left = 1444
+  Height = 498
+  Top = 243
+  Width = 400
+  Caption = 'Form2'
+  ClientHeight = 498
+  ClientWidth = 400
+  DesignTimePPI = 120
+  OnShow = FormShow
+  LCLVersion = '2.0.0.4'
+  object Panel1: TPanel
+    Left = 0
+    Height = 63
+    Top = 432
+    Width = 400
+    TabOrder = 9
+  end
+  object EEmployee: TEdit
+    Left = 191
+    Height = 28
+    Top = 32
+    Width = 168
+    TabOrder = 0
+  end
+  object ESalary: TEdit
+    Left = 191
+    Height = 28
+    Top = 304
+    Width = 168
+    TabOrder = 1
+  end
+  object EPrize: TEdit
+    Left = 191
+    Height = 28
+    Top = 360
+    Width = 168
+    TabOrder = 2
+  end
+  object EExperience: TEdit
+    Left = 192
+    Height = 28
+    Top = 248
+    Width = 167
+    TabOrder = 3
+  end
+  object Label1: TLabel
+    Left = 24
+    Height = 20
+    Top = 32
+    Width = 79
+    Caption = 'Сотрудник*'
+    ParentColor = False
+  end
+  object Label2: TLabel
+    Left = 24
+    Height = 20
+    Top = 88
+    Width = 116
+    Caption = 'Подразделение*'
+    ParentColor = False
+  end
+  object Label3: TLabel
+    Left = 24
+    Height = 20
+    Top = 144
+    Width = 83
+    Caption = 'Должность*'
+    ParentColor = False
+  end
+  object Label4: TLabel
+    Left = 24
+    Height = 20
+    Top = 200
+    Width = 113
+    Caption = 'Дата рождения*'
+    ParentColor = False
+  end
+  object Label5: TLabel
+    Left = 24
+    Height = 20
+    Top = 248
+    Width = 40
+    Caption = 'Стаж*'
+    ParentColor = False
+  end
+  object Label6: TLabel
+    Left = 24
+    Height = 20
+    Top = 304
+    Width = 48
+    Caption = 'Оклад*'
+    ParentColor = False
+  end
+  object Label7: TLabel
+    Left = 24
+    Height = 20
+    Top = 360
+    Width = 62
+    Caption = 'Премия*'
+    ParentColor = False
+  end
+  object EDivision: TComboBox
+    Left = 192
+    Height = 28
+    Top = 88
+    Width = 167
+    ItemHeight = 20
+    TabOrder = 4
+  end
+  object EPost: TComboBox
+    Left = 192
+    Height = 28
+    Top = 144
+    Width = 168
+    ItemHeight = 20
+    TabOrder = 5
+  end
+  object ComDate: TDateEdit
+    Left = 192
+    Height = 28
+    Top = 200
+    Width = 169
+    CalendarDisplaySettings = [dsShowHeadings, dsShowDayNames]
+    DefaultToday = True
+    DateOrder = doDMY
+    ButtonWidth = 29
+    NumGlyphs = 1
+    MaxLength = 10
+    OnChange = ComDateChange
+    ParentShowHint = False
+    TabOrder = 6
+    Text = '  .  .    '
+  end
+  object BtnOk: TButton
+    Left = 64
+    Height = 31
+    Top = 455
+    Width = 94
+    Caption = 'Сохранить'
+    ModalResult = 1
+    TabOrder = 7
+  end
+  object BtnCancel: TButton
+    Left = 216
+    Height = 32
+    Top = 455
+    Width = 96
+    Caption = 'Отмена'
+    ModalResult = 2
+    TabOrder = 8
+  end
+end
